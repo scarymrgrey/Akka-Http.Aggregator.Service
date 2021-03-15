@@ -5,16 +5,13 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.server.Route
-import com.fedex.routes.{ShipmentRoutes, UserRoutes}
-import com.fedex.services.{AggXyzHttpService, UserRegistry, XyzService}
-
-import scala.util.Failure
-import scala.util.Success
-import akka.http.scaladsl.server.Directives._
-import com.fedex.infrastructure.XyzHttpService
-import com.fedex.typeclasses.Completable
+import com.fedex.infrastructure.{XyzHttpService, XyzHttpServiceBusFactory}
+import com.fedex.routes.AggregationsRoute
+import com.fedex.services.AggXyzHttpService
 
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
+
 object TntDigitalApp {
   private def startHttpServer(routes: Route)(implicit system: ActorSystem[_]): Unit = {
 
@@ -33,23 +30,20 @@ object TntDigitalApp {
 
   def main(args: Array[String]): Unit = {
     val rootBehavior = Behaviors.setup[Nothing] { context: ActorContext[Nothing] =>
-      import XyzHttpService._
-      val userRegistryActor = context.spawn(UserRegistry(), "UserRegistryActor")
-      context.watch(userRegistryActor)
-      val userR = new UserRoutes(userRegistryActor)(context.system)
-
       import cats.instances.future._
+
       import scala.concurrent.ExecutionContext.Implicits.global
-      implicit val xyz = XyzService.dsl
-      import com.fedex.typeclasses.CompletableInstances._
+      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(XyzHttpServiceBusFactory.dsl)
+      import com.fedex.typeclasses.TimedOutInstances._
       implicit val ac: ActorSystem[Nothing] = context.system
+      import com.fedex.typeclasses.combiners.HttpResponseSemigroupInstances._
+      import com.fedex.typeclasses.HttpResponseTaggable._
+      val shipmentR = new AggregationsRoute(AggXyzHttpService.dsl[Future, HttpResponse])(context.system)
 
-      val shipmentR = new ShipmentRoutes(XyzService.dsl, AggXyzHttpService.dsl[Future,HttpResponse])(context.system)
-
-      startHttpServer(userR.routes ~ shipmentR.routes)(context.system)
+      startHttpServer(shipmentR.routes)(context.system)
 
       Behaviors.empty
     }
-    ActorSystem[Nothing](rootBehavior, "HelloAkkaHttpServer")
+    ActorSystem[Nothing](rootBehavior, "TNTAkkaServer")
   }
 }

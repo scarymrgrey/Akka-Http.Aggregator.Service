@@ -1,48 +1,41 @@
 package com.fedex.infrastructure
 
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import com.fedex.services.XyzServiceBus
+import akka.http.scaladsl.model.HttpResponse
+import com.fedex.typeclasses.combiners.XyzQuerySemigroup
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
 object XyzHttpService {
-  implicit val dsl : XyzServiceBus[Future, HttpRequest, HttpResponse] = new XyzServiceBus[Future, HttpRequest, HttpResponse] {
 
-    import akka.actor.ActorSystem
-    import akka.http.scaladsl.Http
-    import akka.http.scaladsl.model._
-    import akka.stream.scaladsl._
-    import akka.stream.{OverflowStrategy, QueueOfferResult}
+  implicit def dsl(implicit
+                   xyzServiceFactory: XyzHttpServiceBusFactory
+                  ): XyzHttpService[Future, HttpResponse] = new XyzHttpService[Future, HttpResponse] {
 
-    import scala.concurrent.{Future, Promise}
-    import scala.util.{Failure, Success}
+    import xyzServiceFactory._
 
-    implicit val system = ActorSystem()
+    implicit val qc = XyzQuerySemigroup
+    implicit val confs = XyzHttpServiceBusConfigs(10, 100, 5.seconds)
+    private val shipmentQueue = newQueueFor("shipments")
+    private val trackQueue = newQueueFor("track")
+    private val pricingQueue = newQueueFor("pricing")
 
-    import system.dispatcher // to get an implicit ExecutionContext into scope
 
-    val QueueSize = 10
+    override def getShipments(query: Option[String]): Future[HttpResponse] =
+      shipmentQueue.queueRequest(query)
 
-    val poolClientFlow = Http().cachedHostConnectionPool[Promise[HttpResponse]]("localhost",8888)
-    val queue =
-      Source.queue[(HttpRequest, Promise[HttpResponse])](QueueSize, OverflowStrategy.backpressure , 10)
-        .throttle(10, 5.second)
-        .via(poolClientFlow)
-        .to(Sink.foreach({
-          case ((Success(resp), p)) => p.success(resp)
-          case ((Failure(e), p)) => p.failure(e)
-        }))
-        .run()
+    override def getTrack(query: Option[String]): Future[HttpResponse] =
+      trackQueue.queueRequest(query)
 
-    override def queueRequest(request: HttpRequest): Future[HttpResponse] = {
-      val responsePromise = Promise[HttpResponse]()
-      queue.offer(request -> responsePromise).flatMap {
-        case QueueOfferResult.Enqueued => responsePromise.future
-        case QueueOfferResult.Dropped => Future.failed(new RuntimeException("Queue overflowed. Try again later."))
-        case QueueOfferResult.Failure(ex) => Future.failed(ex)
-        case QueueOfferResult.QueueClosed => Future.failed(new RuntimeException("Queue was closed (pool shut down) while running the request. Try again later."))
-      }
-    }
+    override def getPricing(query: Option[String]): Future[HttpResponse] =
+      pricingQueue.queueRequest(query)
   }
+}
+
+trait XyzHttpService[F[_], Out] {
+  def getShipments(query: Option[String]): F[Out]
+
+  def getTrack(query: Option[String]): F[Out]
+
+  def getPricing(query: Option[String]): F[Out]
 }
