@@ -1,4 +1,4 @@
-package com.fedex.infrastructure
+package com.fedex.infrastructure.service.implementations
 
 import akka.http.scaladsl.model.HttpResponse
 import com.fedex.typeclasses.combiners.XyzQuerySemigroup
@@ -17,7 +17,7 @@ object XyzHttpService {
     import xyzServiceFactory._
 
     implicit val qc = XyzQuerySemigroup
-    implicit val confs = XyzHttpServiceBusConfigs(10, 100, 5.seconds)
+    implicit val confs = XyzHttpServiceBusConfigs(10, 100, 5.seconds, "localhost", 8888)
     private val shipmentQueue = newQueueFor("shipments")
     private val trackQueue = newQueueFor("track")
     private val pricingQueue = newQueueFor("pricing")
@@ -35,9 +35,11 @@ object XyzHttpService {
 }
 
 trait XyzHttpService[F[_], Out] {
+
   def getShipments(query: Option[String]): F[Out]
 
   def getTrack(query: Option[String]): F[Out]
 
   def getPricing(query: Option[String]): F[Out]
+
 }

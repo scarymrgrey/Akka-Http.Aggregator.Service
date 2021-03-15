@@ -2,7 +2,7 @@ package com.fedex.services
 
 import cats._
 import cats.syntax.all._
-import com.fedex.infrastructure.XyzHttpService
+import com.fedex.infrastructure.service.implementations.XyzHttpService
 import com.fedex.typeclasses.TimedOutSyntax._
 import com.fedex.typeclasses.Taggable
 import com.fedex.typeclasses.{HttpResponseTaggable, TimedOut}

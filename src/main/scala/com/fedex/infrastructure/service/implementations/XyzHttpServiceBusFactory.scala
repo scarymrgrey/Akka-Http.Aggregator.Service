@@ -1,4 +1,4 @@
-package com.fedex.infrastructure
+package com.fedex.infrastructure.service.implementations
 
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import cats.kernel.Semigroup
@@ -9,7 +9,7 @@ import com.fedex.services.XyzServiceBus
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-case class XyzHttpServiceBusConfigs(maxElements: Int,queueSize: Int,  finiteDuration: FiniteDuration)
+case class XyzHttpServiceBusConfigs(maxElements: Int,queueSize: Int,  finiteDuration: FiniteDuration, backendHost: String, backendPort: Int)
 
 trait XyzHttpServiceBusFactory {
   def newQueueFor(endpoint: String)(
@@ -54,7 +54,7 @@ object XyzHttpServiceBusFactory {
         newReq -> responsePromise
       }
 
-      private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]]("localhost", 8888)
+      private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]](confs.backendHost, confs.backendPort)
 
       private val queue =
         Source.queue[(HttpRequest, Promise[HttpResponse])](confs.queueSize, OverflowStrategy.backpressure)

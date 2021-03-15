@@ -1,8 +1,9 @@
 package com.fedex
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.{ContentTypes, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import com.fedex.constants.ResponseConstants
 import com.fedex.routes.AggregationsRoute
 import com.fedex.services.AggXyzService
 import org.scalatest.concurrent.ScalaFutures
@@ -11,7 +12,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.concurrent.Future
 
-class UserRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures with ScalatestRouteTest {
+class AggregationRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures with ScalatestRouteTest {
 
   lazy val testKit = ActorTestKit()
 
@@ -26,19 +27,8 @@ class UserRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures with Sc
       .withStatus(StatusCodes.OK)
       .withEntity(ContentTypes.`application/json`, jsonString))
 
-  object ResponseConstants {
-    val emptyBody =
-      """ "price" : null,
-        | "shipment" : null,
-        | "track" : null, """.stripMargin
 
-    val hasShipments =
-      """ "price" : null,
-        | "shipment" : {"109347263":["pallet","box","envelope"],"123456891":["pallet"]},
-        | "track" : null, """.stripMargin
-  }
-
-  val userRegistry = new AggXyzService[Future, HttpResponse] {
+  private val userRegistry = new AggXyzService[Future, HttpResponse] {
     override def getAggregatedOr(default: HttpResponse)(pricing: Option[String], track: Option[String], shipments: Option[String]): Future[HttpResponse] =
       (pricing, track, shipments) match {
         case (None, None, None) =>
@@ -47,10 +37,14 @@ class UserRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures with Sc
         case (None, None, Some(_)) =>
           createOkWith(ResponseConstants.hasShipments)
 
+        case (Some("return_exception"), None, Some(_)) =>
+          Future.failed(new Exception("return_exception"))
+
         case _ => Future.failed(???)
       }
 
   }
+
   lazy val routes = new AggregationsRoute(userRegistry).routes
 
   "AggregationsRoute" should {
@@ -63,7 +57,7 @@ class UserRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures with Sc
       }
     }
 
-    "return no users if no present (GET /aggregations?shipments=109347263,123456891)" in {
+    "return shipments and nulls (GET /aggregations?shipments=109347263,123456891)" in {
       val request = HttpRequest(uri = "/aggregations?shipments=109347263,123456891")
       request ~> routes ~> check {
         status should ===(StatusCodes.OK)
@@ -71,6 +65,13 @@ class UserRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures with Sc
         entityAs[String] should ===(ResponseConstants.hasShipments)
       }
     }
+
+    "return 500 with message when failed (GET /aggregations?pricing=return_exception)" in {
+      val request = HttpRequest(uri = "/aggregations?pricing=return_exception")
+      request ~> routes ~> check {
+        status should ===(StatusCodes.InternalServerError)
+        entityAs[String] should ===("Administrator notified")
+      }
+    }
   }
 }
-

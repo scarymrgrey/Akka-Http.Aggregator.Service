@@ -5,7 +5,8 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.server.Route
-import com.fedex.infrastructure.{XyzHttpService, XyzHttpServiceBusFactory}
+import cats.instances.future._
+import com.fedex.infrastructure.service.implementations.{XyzHttpService, XyzHttpServiceBusFactory}
 import com.fedex.routes.AggregationsRoute
 import com.fedex.services.AggXyzHttpService
 
@@ -30,18 +31,19 @@ object TntDigitalApp {
 
   def main(args: Array[String]): Unit = {
     val rootBehavior = Behaviors.setup[Nothing] { context: ActorContext[Nothing] =>
-      import cats.instances.future._
+      import com.fedex.typeclasses.HttpResponseTaggable._
+      import com.fedex.typeclasses.TimedOutInstances._
+      import com.fedex.typeclasses.combiners.HttpResponseSemigroupInstances._
 
       import scala.concurrent.ExecutionContext.Implicits.global
+      implicit val ac: ActorSystem[Nothing] = context.system
       val confs = context.system.settings.config
       implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(confs, XyzHttpServiceBusFactory.dsl)
-      import com.fedex.typeclasses.TimedOutInstances._
-      implicit val ac: ActorSystem[Nothing] = context.system
-      import com.fedex.typeclasses.combiners.HttpResponseSemigroupInstances._
-      import com.fedex.typeclasses.HttpResponseTaggable._
-      val shipmentR = new AggregationsRoute(AggXyzHttpService.dsl[Future, HttpResponse])(context.system)
+      val shipmentR: AggregationsRoute = new AggregationsRoute(AggXyzHttpService.dsl[Future, HttpResponse])(context.system)
 
-      startHttpServer(shipmentR.routes)(context.system)
+      startHttpServer {
+        shipmentR.routes
+      }(context.system)
 
       Behaviors.empty
     }
