@@ -1,4 +1,10 @@
 Akka-http-server:
+- 
+- Basics:
+  - Akka server
+  - Akka http client  
+
+
 - Implementation:
     - Story 1 +
     - Story 2 +

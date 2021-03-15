@@ -6,7 +6,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import com.fedex.formats.ResponseDictionary
-import com.fedex.infrastructure.GlobalExceptionHandler.globalExceptionHandler
+import com.fedex.infrastructure.exceptions.GlobalExceptionHandler.globalExceptionHandler
 import com.fedex.services._
 
 import scala.concurrent.Future

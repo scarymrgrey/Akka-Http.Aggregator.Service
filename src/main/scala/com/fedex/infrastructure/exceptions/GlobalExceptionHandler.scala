@@ -1,4 +1,4 @@
-package com.fedex.infrastructure
+package com.fedex.infrastructure.exceptions
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.StatusCodes.InternalServerError
