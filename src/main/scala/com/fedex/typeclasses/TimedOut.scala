@@ -1,12 +1,8 @@
 package com.fedex.typeclasses
 
 
-import akka.NotUsed
 import akka.actor.typed.ActorSystem
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
-import akka.stream.scaladsl.{Merge, Source}
-import akka.util.{ByteString, Timeout}
-import cats._
+import akka.util.Timeout
 
 import scala.concurrent.{ExecutionContext, Future}
 

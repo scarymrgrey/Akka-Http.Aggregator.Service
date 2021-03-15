@@ -2,6 +2,7 @@ package com.fedex.infrastructure
 
 import akka.http.scaladsl.model.HttpResponse
 import com.fedex.typeclasses.combiners.XyzQuerySemigroup
+import com.typesafe.config.Config
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -9,6 +10,7 @@ import scala.concurrent.duration.DurationInt
 object XyzHttpService {
 
   implicit def dsl(implicit
+                   confs: Config,
                    xyzServiceFactory: XyzHttpServiceBusFactory
                   ): XyzHttpService[Future, HttpResponse] = new XyzHttpService[Future, HttpResponse] {
 

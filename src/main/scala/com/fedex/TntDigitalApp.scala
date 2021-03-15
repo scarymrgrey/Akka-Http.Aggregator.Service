@@ -33,7 +33,8 @@ object TntDigitalApp {
       import cats.instances.future._
 
       import scala.concurrent.ExecutionContext.Implicits.global
-      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(XyzHttpServiceBusFactory.dsl)
+      val confs = context.system.settings.config
+      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(confs, XyzHttpServiceBusFactory.dsl)
       import com.fedex.typeclasses.TimedOutInstances._
       implicit val ac: ActorSystem[Nothing] = context.system
       import com.fedex.typeclasses.combiners.HttpResponseSemigroupInstances._
