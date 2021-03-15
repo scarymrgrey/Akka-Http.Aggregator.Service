@@ -10,14 +10,12 @@ import scala.concurrent.duration.DurationInt
 object XyzHttpService {
 
   implicit def dsl(implicit
-                   confs: Config,
                    xyzServiceFactory: XyzHttpServiceBusFactory
                   ): XyzHttpService[Future, HttpResponse] = new XyzHttpService[Future, HttpResponse] {
 
     import xyzServiceFactory._
 
     implicit val qc = XyzQuerySemigroup
-    implicit val confs = XyzHttpServiceBusConfigs(10, 100, 5.seconds, "localhost", 8888)
     private val shipmentQueue = newQueueFor("shipments")
     private val trackQueue = newQueueFor("track")
     private val pricingQueue = newQueueFor("pricing")

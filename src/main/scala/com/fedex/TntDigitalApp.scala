@@ -10,7 +10,7 @@ import com.fedex.infrastructure.service.implementations.{XyzHttpService, XyzHttp
 import com.fedex.routes.AggregationsRoute
 import com.fedex.services.AggXyzHttpService
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 object TntDigitalApp {
@@ -35,10 +35,10 @@ object TntDigitalApp {
       import com.fedex.typeclasses.TimedOutInstances._
       import com.fedex.typeclasses.combiners.HttpResponseSemigroupInstances._
 
-      import scala.concurrent.ExecutionContext.Implicits.global
       implicit val ac: ActorSystem[Nothing] = context.system
-      val confs = context.system.settings.config
-      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(confs, XyzHttpServiceBusFactory.dsl)
+      implicit val ec: ExecutionContextExecutor = context.system.executionContext
+
+      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(XyzHttpServiceBusFactory.dsl)
       val shipmentR: AggregationsRoute = new AggregationsRoute(AggXyzHttpService.dsl[Future, HttpResponse])(context.system)
 
       startHttpServer {

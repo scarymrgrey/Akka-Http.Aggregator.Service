@@ -3,24 +3,22 @@ package com.fedex.infrastructure.service.implementations
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import cats.kernel.Semigroup
 import com.fedex.formats.ResponseDictionary
-import com.fedex.infrastructure.adts.XyzQuery
+import com.fedex.infrastructure.core.configs.WithSettings
+import com.fedex.infrastructure.data.adts.XyzQueryParam
 import com.fedex.services.XyzServiceBus
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-case class XyzHttpServiceBusConfigs(maxElements: Int,queueSize: Int,  finiteDuration: FiniteDuration, backendHost: String, backendPort: Int)
+
 
 trait XyzHttpServiceBusFactory {
-  def newQueueFor(endpoint: String)(
-    implicit confs: XyzHttpServiceBusConfigs,
-     queryCombiner: Semigroup[XyzQuery]): XyzServiceBus[Future, HttpRequest, HttpResponse]
+  def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]): XyzServiceBus[Future, HttpRequest, HttpResponse]
 }
 
 object XyzHttpServiceBusFactory {
-  def dsl: XyzHttpServiceBusFactory = new XyzHttpServiceBusFactory {
-    override def newQueueFor(endpoint: String)
-                            (implicit confs: XyzHttpServiceBusConfigs, queryCombiner: Semigroup[XyzQuery]):
+  def dsl: XyzHttpServiceBusFactory = new XyzHttpServiceBusFactory with WithSettings{
+    override def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]):
     XyzServiceBus[Future, HttpRequest, HttpResponse] = new XyzServiceBus[Future, HttpRequest, HttpResponse] {
 
       import akka.actor.ActorSystem
@@ -46,7 +44,7 @@ object XyzHttpServiceBusFactory {
         responsePromise.future.onComplete(f => listOfRequests.foreach(p => p._2.complete(f)))
         val newQuery = listOfRequests
           .map(_._1.uri.toString())
-          .map(XyzQuery)
+          .map(XyzQueryParam)
           .reduce(queryCombiner.combine)
 
         val value: Uri = Uri.apply(newQuery.query)
@@ -54,12 +52,12 @@ object XyzHttpServiceBusFactory {
         newReq -> responsePromise
       }
 
-      private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]](confs.backendHost, confs.backendPort)
+      private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]](xyzConfs.backendHost, xyzConfs.backendPort)
 
       private val queue =
-        Source.queue[(HttpRequest, Promise[HttpResponse])](confs.queueSize, OverflowStrategy.backpressure)
+        Source.queue[(HttpRequest, Promise[HttpResponse])](xyzConfs.queueSize, OverflowStrategy.backpressure)
           .async
-          .groupedWithin(confs.maxElements, confs.finiteDuration)
+          .groupedWithin(xyzConfs.maxElements, xyzConfs.finiteDurationSeconds seconds)
           .map(combineRequests)
           .via(poolClientFlow)
           .to(Sink.foreach({

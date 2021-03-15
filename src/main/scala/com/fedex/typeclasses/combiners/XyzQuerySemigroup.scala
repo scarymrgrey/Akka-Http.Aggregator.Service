@@ -1,16 +1,16 @@
 package com.fedex.typeclasses.combiners
 
 import cats._
-import com.fedex.infrastructure.adts.XyzQuery
+import com.fedex.infrastructure.data.adts.XyzQueryParam
 
-object XyzQuerySemigroup extends Semigroup[XyzQuery] {
+object XyzQuerySemigroup extends Semigroup[XyzQueryParam] {
 
-  private def splitIntoKV(value: XyzQuery): (String, String) = {
+  private def splitIntoKV(value: XyzQueryParam): (String, String) = {
     val res = value.query.split("/?q=")
     (res.headOption.getOrElse(""), res.tail.headOption.getOrElse(""))
   }
 
-  override def combine(x: XyzQuery, y: XyzQuery): XyzQuery = {
+  override def combine(x: XyzQueryParam, y: XyzQueryParam): XyzQueryParam = {
 
     val (key, _) = splitIntoKV(x)
     val vector = List(x, y)
@@ -21,6 +21,6 @@ object XyzQuerySemigroup extends Semigroup[XyzQuery] {
       .distinct // in order to drop duplicates in parameters for q1&q2
       .mkString(",")
 
-     XyzQuery(s"${key}q=$vector")
+     XyzQueryParam(s"${key}q=$vector")
   }
 }
