@@ -10,4 +10,9 @@ trait WithSettings {
     .fromConfig(conf)
     .at("xyz-backend")
     .loadOrThrow[XyzHttpServiceBusConfigs]
+
+  val aggConfs = ConfigSource
+    .fromConfig(conf)
+    .at("agg-service")
+    .loadOrThrow[AggServiceConfigs]
 }
