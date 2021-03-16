@@ -13,7 +13,7 @@ import scala.concurrent.duration.DurationInt
 object AggXyzHttpService {
   def dsl[F[_] : Applicative : TimedOut, Out: Taggable : Semigroup]
   (implicit xyzService: XyzHttpService[F, Out])
-  : AggXyzService[F, Out] = new AggXyzService[F, Out] with WithSettings{
+  : AggXyzService[F, Out] = new AggXyzService[F, Out] with WithSettings {
 
     import xyzService._
     import HttpResponseTaggable._

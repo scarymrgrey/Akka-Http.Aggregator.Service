@@ -46,9 +46,8 @@ object XyzHttpServiceBusFactory {
           .map(_._1.uri.toString())
           .map(XyzQueryParam)
           .reduce(queryCombiner.combine)
-
-        val value: Uri = Uri.apply(newQuery.query)
-        val newReq = listOfRequests.head._1.withUri(value)
+        
+        val newReq = listOfRequests.head._1.withUri(Uri(newQuery.query))
         newReq -> responsePromise
       }
 
@@ -85,4 +84,3 @@ object XyzHttpServiceBusFactory {
     }
   }
 }
-
