@@ -19,7 +19,8 @@ trait XyzHttpServiceBusFactory {
 object XyzHttpServiceBusFactory {
   def dsl: XyzHttpServiceBusFactory = new XyzHttpServiceBusFactory with WithSettings{
     override def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]):
-    XyzServiceBus[Future, HttpRequest, HttpResponse] = new XyzServiceBus[Future, HttpRequest, HttpResponse] {
+
+    XyzServiceBus[Future, HttpRequest, HttpResponse] = new XyzServiceBus[Future, HttpRequest, HttpResponse] with RequestCombiner {
 
       import akka.actor.ActorSystem
       import akka.http.scaladsl.Http
@@ -37,18 +38,6 @@ object XyzHttpServiceBusFactory {
       private def recoverResponse(httpResponse: HttpResponse): HttpResponse = httpResponse match {
         case HttpResponse(StatusCodes.OK, _, _, _) => httpResponse
         case _ => ResponseDictionary.fallbackResponse
-      }
-
-      private def combineRequests(listOfRequests: Seq[(HttpRequest, Promise[HttpResponse])]): (HttpRequest, Promise[HttpResponse]) = {
-        val responsePromise = Promise[HttpResponse]()
-        responsePromise.future.onComplete(f => listOfRequests.foreach(p => p._2.complete(f)))
-        val newQuery = listOfRequests
-          .map(_._1.uri.toString())
-          .map(XyzQueryParam)
-          .reduce(queryCombiner.combine)
-        
-        val newReq = listOfRequests.head._1.withUri(Uri(newQuery.query))
-        newReq -> responsePromise
       }
 
       private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]](xyzConfs.backendHost, xyzConfs.backendPort)
