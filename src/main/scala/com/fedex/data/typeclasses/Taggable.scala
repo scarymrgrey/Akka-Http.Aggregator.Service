@@ -1,4 +1,4 @@
-package com.fedex.typeclasses
+package com.fedex.data.typeclasses
 
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse}
 import akka.util.ByteString

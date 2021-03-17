@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.util.Timeout
-import com.fedex.formats.ResponseDictionary
+import com.fedex.data.constants.ResponseDictionary
 import com.fedex.infrastructure.exceptions.GlobalExceptionHandler.globalExceptionHandler
 import com.fedex.services._
 

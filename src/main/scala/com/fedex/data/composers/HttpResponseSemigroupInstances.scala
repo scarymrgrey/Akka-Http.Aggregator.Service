@@ -1,4 +1,4 @@
-package com.fedex.typeclasses.combiners
+package com.fedex.data.composers
 
 import akka.NotUsed
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}

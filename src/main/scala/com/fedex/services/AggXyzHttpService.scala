@@ -4,9 +4,9 @@ import cats._
 import cats.syntax.all._
 import com.fedex.infrastructure.core.configs.WithSettings
 import com.fedex.infrastructure.service.implementations.XyzHttpService
-import com.fedex.typeclasses.TimedOutSyntax._
-import com.fedex.typeclasses.Taggable
-import com.fedex.typeclasses.{HttpResponseTaggable, TimedOut}
+import com.fedex.data.typeclasses.TimedOutSyntax._
+import com.fedex.data.typeclasses.Taggable
+import com.fedex.data.typeclasses.{HttpResponseTaggable, TimedOut}
 
 import scala.concurrent.duration.DurationInt
 

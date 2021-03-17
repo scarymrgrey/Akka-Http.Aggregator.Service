@@ -1,7 +1,7 @@
 package com.fedex.infrastructure.service.implementations
 
 import akka.http.scaladsl.model.HttpResponse
-import com.fedex.typeclasses.combiners.XyzQuerySemigroup
+import com.fedex.data.composers.XyzQuerySemigroup
 import com.typesafe.config.Config
 
 import scala.concurrent.Future

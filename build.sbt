@@ -36,7 +36,12 @@ lazy val root = (project in file(".")).
       // Sttp
       "com.softwaremill.sttp.client3" %% "core" % "3.1.7",
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-future" % "3.1.7",
-      "com.github.pureconfig" %% "pureconfig" % "0.14.1"
+
+      // Config parsers
+      "com.github.pureconfig" %% "pureconfig" % "0.14.1",
+
+      // Uri parsers
+      "io.lemonlabs" %% "scala-uri" % "3.1.0"
     ),
     scalacOptions ++=Seq(
       "-encoding", "utf8",

@@ -2,7 +2,7 @@ package com.fedex.infrastructure.service.implementations
 
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import cats.kernel.Semigroup
-import com.fedex.formats.ResponseDictionary
+import com.fedex.data.constants.ResponseDictionary
 import com.fedex.infrastructure.core.configs.WithSettings
 import com.fedex.infrastructure.data.adts.XyzQueryParam
 import com.fedex.services.XyzServiceBus

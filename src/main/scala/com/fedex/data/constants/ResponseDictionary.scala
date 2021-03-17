@@ -1,4 +1,4 @@
-package com.fedex.formats
+package com.fedex.data.constants
 
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 

@@ -31,9 +31,9 @@ object TntDigitalApp {
 
   def main(args: Array[String]): Unit = {
     val rootBehavior = Behaviors.setup[Nothing] { context: ActorContext[Nothing] =>
-      import com.fedex.typeclasses.HttpResponseTaggable._
-      import com.fedex.typeclasses.TimedOutInstances._
-      import com.fedex.typeclasses.combiners.HttpResponseSemigroupInstances._
+      import com.fedex.data.typeclasses.HttpResponseTaggable._
+      import com.fedex.data.typeclasses.TimedOutInstances._
+      import com.fedex.data.composers.HttpResponseSemigroupInstances._
 
       implicit val ac: ActorSystem[Nothing] = context.system
       implicit val ec: ExecutionContextExecutor = context.system.executionContext

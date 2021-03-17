@@ -1,4 +1,4 @@
-package com.fedex.typeclasses.combiners
+package com.fedex.data.composers
 
 import cats._
 import com.fedex.infrastructure.data.adts.XyzQueryParam

@@ -1,4 +1,4 @@
-package com.fedex.typeclasses
+package com.fedex.data.typeclasses
 
 
 import akka.actor.typed.ActorSystem
