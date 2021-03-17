@@ -21,7 +21,7 @@ class AggregationsRoute(aggService: AggXyzService[Future, HttpResponse])(implici
 
   val routes: Route = {
     handleExceptions(globalExceptionHandler) {
-      pathPrefix("aggregations") {
+      pathPrefix("aggregation") {
         pathEnd {
           get {
             parameters("pricing".optional, "track".optional, "shipments".optional) { (pricing, track, shipments) =>
