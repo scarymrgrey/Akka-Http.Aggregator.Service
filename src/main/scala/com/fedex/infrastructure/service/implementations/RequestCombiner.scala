@@ -1,6 +1,6 @@
 package com.fedex.infrastructure.service.implementations
 
-import akka.http.scaladsl.model.{HttpEntity, HttpRequest, HttpResponse, Uri}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import cats.kernel.Semigroup
 import com.fedex.infrastructure.data.adts.XyzQueryParam
@@ -17,8 +17,8 @@ trait RequestCombiner {
   private def getValuesFromMap(keys: Seq[String], innerMap: Map[String, JsValue]): Map[String, JsValue] =
     keys.map(k => (k, innerMap(k))).toMap
 
-  def decomposeHttpResponse(combinedResponse: Try[HttpResponse], requests: Seq[(HttpRequest, Promise[HttpResponse])])(implicit mat: Materializer, ec: ExecutionContext): Try[Future[Seq[(Promise[HttpResponse], Try[HttpResponse])]]] = {
-    val reqsWithParams = requests.map { case (req, promise) =>
+  private def decomposeHttpResponse(combinedResponse: Try[HttpResponse], requests: Seq[(HttpRequest, Promise[HttpResponse])])(implicit mat: Materializer, ec: ExecutionContext): Try[Future[Seq[(Promise[HttpResponse], Try[HttpResponse])]]] = {
+    val requestsWithParams = requests.map { case (req, promise) =>
       val keys = Url.parse(req.uri.toString())
         .query
         .params
@@ -30,28 +30,27 @@ trait RequestCombiner {
     combinedResponse.map { value =>
       Unmarshal(value.entity).to[String].map { string =>
         val responseMap = string.parseJson.convertTo[Map[String, JsValue]]
-        reqsWithParams.map { case (promise, keys) =>
+        requestsWithParams.map { case (promise, keys) =>
           val values = getValuesFromMap(keys, responseMap)
-          val response: HttpResponse = HttpResponse().withEntity(HttpEntity(values.toJson.prettyPrint))
+          val response = HttpResponse()
+            .withEntity(HttpEntity(ContentTypes.`application/json`,values.toJson.prettyPrint))
           (promise, Success(response))
         }
       }
     }
   }
 
-  def combineRequests(listOfRequests: Seq[(HttpRequest, Promise[HttpResponse])])(implicit queryCombiner: Semigroup[XyzQueryParam], mat: Materializer, ec: ExecutionContext)
-  : (HttpRequest, Promise[HttpResponse]) = {
+  def combineRequests(listOfRequests: Seq[(HttpRequest, Promise[HttpResponse])])
+                     (implicit queryCombiner: Semigroup[XyzQueryParam], mat: Materializer, ec: ExecutionContext): (HttpRequest, Promise[HttpResponse]) = {
 
     case class RequestWithParameters(params: Seq[String], httpRequest: HttpRequest, promise: Promise[HttpResponse])
-
 
     val responsePromise = Promise[HttpResponse]()
 
     responsePromise.future.onComplete(combinedResponse =>
       decomposeHttpResponse(combinedResponse, listOfRequests).foreach { fut =>
         fut.foreach {
-          list =>
-            list.foreach {
+          _.foreach {
               case (promise, response) => promise.complete(response)
             }
         }
