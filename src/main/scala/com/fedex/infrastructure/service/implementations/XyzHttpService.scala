@@ -7,6 +7,16 @@ import com.typesafe.config.Config
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 
+trait XyzHttpService[F[_], Out] {
+
+  def getShipments(query: Option[String]): F[Out]
+
+  def getTrack(query: Option[String]): F[Out]
+
+  def getPricing(query: Option[String]): F[Out]
+
+}
+
 object XyzHttpService {
 
   implicit def dsl(implicit
@@ -30,14 +40,4 @@ object XyzHttpService {
     override def getPricing(query: Option[String]): Future[HttpResponse] =
       pricingQueue.queueRequest(query)
   }
-}
-
-trait XyzHttpService[F[_], Out] {
-
-  def getShipments(query: Option[String]): F[Out]
-
-  def getTrack(query: Option[String]): F[Out]
-
-  def getPricing(query: Option[String]): F[Out]
-
 }

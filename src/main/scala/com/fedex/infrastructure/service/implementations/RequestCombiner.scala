@@ -11,13 +11,16 @@ import io.lemonlabs.uri.Url
 import spray.json._
 import DefaultJsonProtocol._
 import akka.stream.Materializer
+import cats.Functor
 
 trait RequestCombiner {
 
   private def getValuesFromMap(keys: Seq[String], innerMap: Map[String, JsValue]): Map[String, JsValue] =
     keys.map(k => (k, innerMap(k))).toMap
 
-  private def decomposeHttpResponse(combinedResponse: Try[HttpResponse], requests: Seq[(HttpRequest, Promise[HttpResponse])])(implicit mat: Materializer, ec: ExecutionContext): Try[Future[Seq[(Promise[HttpResponse], Try[HttpResponse])]]] = {
+  private def decomposeHttpResponse(combinedResponse: Try[HttpResponse], requests: Seq[(HttpRequest, Promise[HttpResponse])])
+                                   (implicit mat: Materializer, ec: ExecutionContext): Try[Future[Seq[(Promise[HttpResponse], HttpResponse)]]] = {
+
     val requestsWithParams = requests.map { case (req, promise) =>
       val keys = Url.parse(req.uri.toString())
         .query
@@ -33,8 +36,8 @@ trait RequestCombiner {
         requestsWithParams.map { case (promise, keys) =>
           val values = getValuesFromMap(keys, responseMap)
           val response = HttpResponse()
-            .withEntity(HttpEntity(ContentTypes.`application/json`,values.toJson.prettyPrint))
-          (promise, Success(response))
+            .withEntity(HttpEntity(ContentTypes.`application/json`, values.toJson.prettyPrint))
+          (promise, response)
         }
       }
     }
@@ -46,14 +49,11 @@ trait RequestCombiner {
     case class RequestWithParameters(params: Seq[String], httpRequest: HttpRequest, promise: Promise[HttpResponse])
 
     val responsePromise = Promise[HttpResponse]()
-
+    
     responsePromise.future.onComplete(combinedResponse =>
-      decomposeHttpResponse(combinedResponse, listOfRequests).foreach { fut =>
-        fut.foreach {
-          _.foreach {
-              case (promise, response) => promise.complete(response)
-            }
-        }
+      Functor[Try].compose[Future].compose[Seq]
+        .map(decomposeHttpResponse(combinedResponse, listOfRequests)){
+        case (promise, response) => promise.complete(Success(response))
       }
     )
 

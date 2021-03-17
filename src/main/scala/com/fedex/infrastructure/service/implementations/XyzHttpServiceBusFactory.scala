@@ -10,8 +10,6 @@ import com.fedex.services.XyzServiceBus
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-
-
 trait XyzHttpServiceBusFactory {
   def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]): XyzServiceBus[Future, HttpRequest, HttpResponse]
 }
