@@ -49,7 +49,7 @@ trait RequestCombiner {
     case class RequestWithParameters(params: Seq[String], httpRequest: HttpRequest, promise: Promise[HttpResponse])
 
     val responsePromise = Promise[HttpResponse]()
-    
+
     responsePromise.future.onComplete(combinedResponse =>
       Functor[Try].compose[Future].compose[Seq]
         .map(decomposeHttpResponse(combinedResponse, listOfRequests)){
