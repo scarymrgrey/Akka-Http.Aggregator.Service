@@ -22,3 +22,7 @@ Run:
 - git clone https://github.com/scarymrgrey/Akka-Http.Aggregator.Service.git
 - cd Akka-Http.Aggregator.Service
 - sbt run
+
+### 0.0% of failed requests, median response time below 200ms, 95% percentile below 5 sec
+
+![Screenshot](img.png)

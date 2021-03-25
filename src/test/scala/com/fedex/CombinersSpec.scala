@@ -15,7 +15,7 @@ import DefaultJsonProtocol._
 import org.scalatest.{Assertion, durations}
 import org.scalatest.flatspec.AsyncFlatSpec
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.Success
 
@@ -80,7 +80,9 @@ class CombinersSpec extends AnyWordSpec with Matchers with ScalaFutures with Sca
         j1.convertTo[Map[String, JsValue]].toSet should contain theSameElementsAs (j2.convertTo[Map[String, JsValue]].toSet)
       }
 
-      Await.ready(body1, Duration.Inf).value.get.map(body => {
+      val value1: JsValue = body1.futureValue
+
+      Await.ready(body1, 1 second).value.get.map(body => {
         compareTwoJsons(body, exp1)
       })
 
@@ -88,7 +90,7 @@ class CombinersSpec extends AnyWordSpec with Matchers with ScalaFutures with Sca
       val exp2: JsValue = "{\n\"val4\": 40.503467806384,\n\"val5\": 50.503467806384,\n\"val6\": 60.503467806384,\n\"val7\": 70.503467806384,\n\"val8\": 80.503467806384\n}"
         .parseJson
 
-      Await.ready(body2, Duration.Inf).value.get.map(body => {
+      Await.ready(body2, 1 second).value.get.map(body => {
         compareTwoJsons(body, exp2)
       })
     }
