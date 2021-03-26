@@ -80,8 +80,6 @@ class CombinersSpec extends AnyWordSpec with Matchers with ScalaFutures with Sca
         j1.convertTo[Map[String, JsValue]].toSet should contain theSameElementsAs (j2.convertTo[Map[String, JsValue]].toSet)
       }
 
-      val value1: JsValue = body1.futureValue
-
       Await.ready(body1, 1 second).value.get.map(body => {
         compareTwoJsons(body, exp1)
       })
