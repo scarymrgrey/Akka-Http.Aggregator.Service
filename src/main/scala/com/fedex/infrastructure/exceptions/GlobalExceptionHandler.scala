@@ -8,9 +8,9 @@ import akka.http.scaladsl.server.ExceptionHandler
 object GlobalExceptionHandler {
   implicit def globalExceptionHandler: ExceptionHandler =
     ExceptionHandler {
-      case _ =>
+      case ex =>
         extractUri { uri =>
-          println(s"Some logging to ELK here: ${uri}")
+          println(s"Some logging to ELK here: ${uri} Exception: $ex")
           complete(HttpResponse(InternalServerError, entity = "Administrator notified"))
         }
     }

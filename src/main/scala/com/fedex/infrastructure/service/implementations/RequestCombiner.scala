@@ -3,6 +3,7 @@ package com.fedex.infrastructure.service.implementations
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.Materializer
+import cats.implicits._
 import cats.kernel.Semigroup
 import com.fedex.data.constants.ResponseDictionary
 import com.fedex.infrastructure.data.adts.XyzQueryParam
@@ -10,8 +11,7 @@ import io.lemonlabs.uri.Url
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Success, Try}
+import scala.concurrent.{ExecutionContext, Promise}
 
 
 trait RequestCombiner {
@@ -19,19 +19,31 @@ trait RequestCombiner {
   private def getValuesFromMap(keys: Seq[String], innerMap: Map[String, JsValue]): Map[String, JsValue] =
     keys.map(k => (k, innerMap(k))).toMap
 
-  def getResp(req: HttpRequest, combinedResponse: HttpResponse)(implicit mat: Materializer, ec: ExecutionContext): Future[Try[HttpResponse]] = {
+  def jsonOk(str: String): HttpResponse = {
+    HttpResponse()
+      .withStatus(StatusCodes.OK)
+      .withEntity(str)
+  }
 
-    val keys = Url.parse(req.uri.toString())
-      .query
-      .params
-      .flatMap(_._2.getOrElse("").split(","))
+  def getResp(req: HttpRequest, responseMapOpt: Option[Map[String, JsValue]]): HttpResponse = {
+    responseMapOpt match {
+      case Some(responseMap) =>
+        val keys = Url.parse(req.uri.toString())
+          .query
+          .params
+          .flatMap(_._2.getOrElse("").split(","))
 
-    Unmarshal(combinedResponse.entity).to[String].map { string =>
-      val responseMap = string.parseJson.convertTo[Map[String, JsValue]]
-      val values = getValuesFromMap(keys, responseMap)
-      val response = HttpResponse()
-        .withEntity(HttpEntity(ContentTypes.`application/json`, values.toJson.prettyPrint))
-      Success(response)
+        val values = getValuesFromMap(keys, responseMap)
+        jsonOk(values.toJson.toString())
+
+      case _ => ResponseDictionary.fallbackResponse
+    }
+  }
+
+  def extractEntity[U](combinedResponse: HttpResponse): Option[HttpEntity] = {
+    combinedResponse match {
+      case HttpResponse(StatusCodes.OK, _, _, _) => Some(combinedResponse.entity)
+      case _ => None
     }
   }
 
@@ -40,13 +52,17 @@ trait RequestCombiner {
 
     val responsePromise = Promise[HttpResponse]()
 
-    responsePromise.future.onComplete { combinedResponse: Try[HttpResponse] =>
-      listOfRequests.foreach { case (req, prom) =>
-        getResp(req, combinedResponse.get).onComplete {
-          case Success(x) => prom.complete(x)
-          case _ => prom.complete(Success(ResponseDictionary.fallbackResponse))
+    responsePromise.future.foreach { combinedResponse: HttpResponse =>
+      extractEntity(combinedResponse).map { combinedResponseEntity: HttpEntity =>
+        Unmarshal(combinedResponseEntity).to[String]
+          .map(_.parseJson.convertTo[Map[String, JsValue]])
+
+      }.sequence
+        .foreach { values =>
+          listOfRequests.foreach { case (req, prom) =>
+            prom.success(getResp(req, values))
+          }
         }
-      }
     }
 
     val newQuery =

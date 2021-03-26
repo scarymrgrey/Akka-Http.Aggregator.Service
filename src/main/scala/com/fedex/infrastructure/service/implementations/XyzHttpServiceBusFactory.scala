@@ -9,6 +9,7 @@ import com.fedex.services.XyzServiceBus
 
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.util.Try
 
 trait XyzHttpServiceBusFactory {
   def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]): XyzServiceBus[Future, HttpRequest, HttpResponse]
@@ -38,6 +39,11 @@ object XyzHttpServiceBusFactory {
         case _ => ResponseDictionary.fallbackResponse
       }
 
+      private def failResp(httpResponse: HttpResponse): Try[HttpResponse] = httpResponse match {
+        case HttpResponse(StatusCodes.OK, _, _, _) => Success(httpResponse)
+        case _ => Failure(???)
+      }
+
       private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]](xyzConfs.backendHost, xyzConfs.backendPort)
 
       private val queue =
@@ -47,8 +53,8 @@ object XyzHttpServiceBusFactory {
           .map(combineRequests)
           .via(poolClientFlow)
           .to(Sink.foreach({
-            case ((Success(resp), p)) => p.success(recoverResponse(resp))
-            case ((Failure(_), p)) => p.success(ResponseDictionary.fallbackResponse)
+            case ((Success(resp), p)) => p.success(resp)
+            case ((Failure(e), p))    => p.failure(e)
           }))
           .run()
 
