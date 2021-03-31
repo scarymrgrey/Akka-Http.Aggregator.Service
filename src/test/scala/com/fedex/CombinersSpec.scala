@@ -6,20 +6,25 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.fedex.data.composers.XyzQuerySemigroup
 import com.fedex.infrastructure.data.adts.XyzQueryParam
 import com.fedex.infrastructure.service.implementations.RequestCombiner
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Seconds, Span}
 import org.scalatest.wordspec.AnyWordSpec
+import spray.json.DefaultJsonProtocol._
 import spray.json._
-import DefaultJsonProtocol._
-import org.scalatest.{Assertion, durations}
-import org.scalatest.flatspec.AsyncFlatSpec
 
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.Success
 
 class CombinersSpec extends AnyWordSpec with Matchers with ScalaFutures with ScalatestRouteTest {
+
+  def compareTwoJsons(j1: JsValue, j2: JsValue): Unit = {
+    val set1 = j1.convertTo[Map[String, JsValue]].toSet
+    val set2 = j2.convertTo[Map[String, JsValue]].toSet
+    set1 should contain theSameElementsAs set2
+  }
+
 
   "XyzQuerySemigroup" should {
 
@@ -42,7 +47,6 @@ class CombinersSpec extends AnyWordSpec with Matchers with ScalaFutures with Sca
     "correctly combine two requests" in {
       val rq = new RequestCombiner {}
       implicit val qc = XyzQuerySemigroup
-
 
       val request1 = HttpRequest(uri = "/shipments?q=val1,val2,val3,val4,val5")
       val promise1 = Promise[HttpResponse]()
@@ -68,29 +72,33 @@ class CombinersSpec extends AnyWordSpec with Matchers with ScalaFutures with Sca
           |"val8": 80.503467806384
           |}""".stripMargin
       val surrogateResponse = HttpResponse().withEntity(jsonBody)
-
       combinedPromise.complete(Success(surrogateResponse))
 
-      val body1 = promise1.future.map(r => Unmarshal(r.entity).to[String].map(_.parseJson)).flatten
+      val body1 = promise1.future.flatMap(r => Unmarshal(r.entity).to[String].map(_.parseJson))
+      val exp1 =
+        """{
+          |"val1": 14.242090605778,
+          |"val2": 20.503467806384,
+          |"val3": 30.503467806384,
+          |"val4": 40.503467806384,
+          |"val5": 50.503467806384
+          |}""".stripMargin
+          .parseJson
+      whenReady(body1, Timeout(10 seconds))(compareTwoJsons(_, exp1))
 
-      val exp1: JsValue = "{\n\"val1\": 14.242090605778,\n\"val2\": 20.503467806384,\n\"val3\": 30.503467806384,\n\"val4\": 40.503467806384,\n\"val5\": 50.503467806384\n}"
-        .parseJson
+      val body2 = promise2.future.flatMap(r => Unmarshal(r.entity).to[String].map(_.parseJson))
+      val exp2 = {
+        """{
+          |"val4": 40.503467806384,
+          |"val5": 50.503467806384,
+          |"val6": 60.503467806384,
+          |"val7": 70.503467806384,
+          |"val8": 80.503467806384
+          |}""".stripMargin
+          .parseJson
 
-      def compareTwoJsons(j1: JsValue, j2: JsValue): Unit = {
-        j1.convertTo[Map[String, JsValue]].toSet should contain theSameElementsAs (j2.convertTo[Map[String, JsValue]].toSet)
       }
-
-      Await.ready(body1, 1 second).value.get.map(body => {
-        compareTwoJsons(body, exp1)
-      })
-
-      val body2: Future[JsValue] = whenReady(promise2.future, timeout(Span(6, Seconds)))(r => Unmarshal(r.entity).to[String].map(_.toJson))
-      val exp2: JsValue = "{\n\"val4\": 40.503467806384,\n\"val5\": 50.503467806384,\n\"val6\": 60.503467806384,\n\"val7\": 70.503467806384,\n\"val8\": 80.503467806384\n}"
-        .parseJson
-
-      Await.ready(body2, 1 second).value.get.map(body => {
-        compareTwoJsons(body, exp2)
-      })
+      whenReady(body2, Timeout(10 seconds))(compareTwoJsons(_, exp2))
     }
   }
 }

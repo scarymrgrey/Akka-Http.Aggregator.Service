@@ -1,48 +1,31 @@
 package com.fedex.infrastructure.service.implementations
 
+import akka.actor.typed.{ActorSystem, DispatcherSelector}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.stream.scaladsl._
+import akka.stream.{OverflowStrategy, QueueOfferResult}
 import cats.kernel.Semigroup
 import com.fedex.data.constants.ResponseDictionary
 import com.fedex.infrastructure.core.configs.WithSettings
 import com.fedex.infrastructure.data.adts.XyzQueryParam
 import com.fedex.services.XyzServiceBus
 
-import scala.concurrent.Future
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.util.Try
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Future, Promise}
+import scala.util.{Failure, Success}
 
 trait XyzHttpServiceBusFactory {
   def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]): XyzServiceBus[Future, HttpRequest, HttpResponse]
 }
 
 object XyzHttpServiceBusFactory {
-  def dsl: XyzHttpServiceBusFactory = new XyzHttpServiceBusFactory with WithSettings{
+  def dsl(implicit system: ActorSystem[_]): XyzHttpServiceBusFactory = new XyzHttpServiceBusFactory with WithSettings{
     override def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]):
 
     XyzServiceBus[Future, HttpRequest, HttpResponse] = new XyzServiceBus[Future, HttpRequest, HttpResponse] with RequestCombiner {
 
-      import akka.actor.ActorSystem
-      import akka.http.scaladsl.Http
-      import akka.http.scaladsl.model._
-      import akka.stream.scaladsl._
-      import akka.stream.{OverflowStrategy, QueueOfferResult}
-
-      import scala.concurrent.{Future, Promise}
-      import scala.util.{Failure, Success}
-
-      private implicit val system: ActorSystem = ActorSystem()
-
-      import system.dispatcher
-
-      private def recoverResponse(httpResponse: HttpResponse): HttpResponse = httpResponse match {
-        case HttpResponse(StatusCodes.OK, _, _, _) => httpResponse
-        case _ => ResponseDictionary.fallbackResponse
-      }
-
-      private def failResp(httpResponse: HttpResponse): Try[HttpResponse] = httpResponse match {
-        case HttpResponse(StatusCodes.OK, _, _, _) => Success(httpResponse)
-        case _ => Failure(???)
-      }
+      private implicit val ec =  system.executionContext
 
       private val poolClientFlow = Http().newHostConnectionPool[Promise[HttpResponse]](xyzConfs.backendHost, xyzConfs.backendPort)
 

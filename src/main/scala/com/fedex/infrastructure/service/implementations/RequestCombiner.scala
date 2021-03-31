@@ -19,13 +19,17 @@ trait RequestCombiner {
   private def getValuesFromMap(keys: Seq[String], innerMap: Map[String, JsValue]): Map[String, JsValue] =
     keys.map(k => (k, innerMap(k))).toMap
 
-  def jsonOk(str: String): HttpResponse = {
+  private def jsonOk(body: String): HttpResponse =
     HttpResponse()
       .withStatus(StatusCodes.OK)
-      .withEntity(str)
-  }
+      .withEntity(body)
 
-  def getResp(req: HttpRequest, responseMapOpt: Option[Map[String, JsValue]]): HttpResponse = {
+  private def extractEntity[U](combinedResponse: HttpResponse): Option[HttpEntity] = combinedResponse match {
+      case HttpResponse(StatusCodes.OK, _, _, _) => Some(combinedResponse.entity)
+      case _ => None
+    }
+
+  private def getResp(req: HttpRequest, responseMapOpt: Option[Map[String, JsValue]]): HttpResponse = {
     responseMapOpt match {
       case Some(responseMap) =>
         val keys = Url.parse(req.uri.toString())
@@ -40,12 +44,6 @@ trait RequestCombiner {
     }
   }
 
-  def extractEntity[U](combinedResponse: HttpResponse): Option[HttpEntity] = {
-    combinedResponse match {
-      case HttpResponse(StatusCodes.OK, _, _, _) => Some(combinedResponse.entity)
-      case _ => None
-    }
-  }
 
   def combineRequests(listOfRequests: Seq[(HttpRequest, Promise[HttpResponse])])
                      (implicit queryCombiner: Semigroup[XyzQueryParam], mat: Materializer, ec: ExecutionContext): (HttpRequest, Promise[HttpResponse]) = {

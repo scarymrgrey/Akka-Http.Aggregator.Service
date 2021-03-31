@@ -1,5 +1,6 @@
 package com.fedex.infrastructure.service.implementations
 
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import com.fedex.data.composers.XyzQuerySemigroup
 import com.typesafe.config.Config

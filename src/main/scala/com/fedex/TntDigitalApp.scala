@@ -35,11 +35,13 @@ object TntDigitalApp {
       import com.fedex.data.typeclasses.TimedOutInstances._
       import com.fedex.data.composers.HttpResponseSemigroupInstances._
 
-      implicit val ac: ActorSystem[Nothing] = context.system
+      implicit val ac: ActorSystem[_] = context.system
       implicit val ec: ExecutionContextExecutor = context.system.executionContext
 
-      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl(XyzHttpServiceBusFactory.dsl)
-      val shipmentR: AggregationsRoute = new AggregationsRoute(AggXyzHttpService.dsl[Future, HttpResponse])(context.system)
+      implicit val factory = XyzHttpServiceBusFactory.dsl
+      implicit val xyz: XyzHttpService[Future, HttpResponse] = XyzHttpService.dsl
+      val aggService = AggXyzHttpService.dsl[Future, HttpResponse]
+      val shipmentR: AggregationsRoute = new AggregationsRoute(aggService)(context.system)
 
       startHttpServer {
         shipmentR.routes

@@ -1,6 +1,7 @@
 package com.fedex
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.fedex.constants.ResponseConstants
@@ -16,11 +17,7 @@ class AggregationRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures 
 
   lazy val testKit = ActorTestKit()
 
-  implicit def typedSystem = testKit.system
-
-  override def createActorSystem(): akka.actor.ActorSystem =
-    testKit.system.classicSystem
-
+  implicit def typedSystem: ActorSystem[Nothing] = testKit.system
 
   def createOkWith(jsonString: String): Future[HttpResponse] =
     Future.successful(HttpResponse()
@@ -40,7 +37,7 @@ class AggregationRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures 
         case (Some("return_exception"), None, Some(_)) =>
           Future.failed(new Exception("return_exception"))
 
-        case _ => Future.failed(???)
+        case _ => Future.failed(new Exception)
       }
 
   }
