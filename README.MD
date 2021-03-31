@@ -1,9 +1,9 @@
 Akka-http-server:
 - 
-##Task:
+## Task:
 To implement http aggregator/forwarder service which could accumulate http requests for some time (or # of income requests),
 in order to reduce the network load. In fact, it is a PROXY
-##IMPORTANT
+## IMPORTANT
 It is a POC, test task, programing exercise, whatever but NOT a PRODUCTION-READY solution.I repeat NOT a PRODUCTION-READY solution.
 For a production ready solutions please contact me for a commercial offer. 
 - Basics:
@@ -31,7 +31,7 @@ For me the existing config file looks self-explanatory, but all the people have 
 so here we go:
 - xyz-backend.max-elements <- the maximum number of elements in http-aggregator's queue to trigger the actual http call to xyz
 - xyz-backend.finite-duration-seconds <- the maximum number of seconds (finite duration) in http-aggregator's queue to trigger the actual http call to xyz
-- xyz-backend.backend-host <- Surprisingly, xyz host
+- xyz-backend.backend-host <- Surprisingly, xyz hosts
 - xyz-backend.backend-port <- xyz port, wow
 
 ### Run:
