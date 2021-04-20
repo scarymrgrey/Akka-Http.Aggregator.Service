@@ -27,12 +27,11 @@ For a production ready solutions please contact me for a commercial offer.
 and will return 'null' on the timeout.
 
 ### Configuration
-For me the existing config file looks self-explanatory, but all the people have different cognitive abilities
-so here we go:
+Config file looks self-explanatory:
 - xyz-backend.max-elements <- the maximum number of elements in http-aggregator's queue to trigger the actual http call to xyz
 - xyz-backend.finite-duration-seconds <- the maximum number of seconds (finite duration) in http-aggregator's queue to trigger the actual http call to xyz
-- xyz-backend.backend-host <- Surprisingly, xyz hosts
-- xyz-backend.backend-port <- xyz port, wow
+- xyz-backend.backend-host <- xyz host
+- xyz-backend.backend-port <- xyz port
 
 ### Run:
 - git clone https://github.com/scarymrgrey/Akka-Http.Aggregator.Service.git

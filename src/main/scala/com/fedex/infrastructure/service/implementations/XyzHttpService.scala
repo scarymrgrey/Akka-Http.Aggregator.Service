@@ -27,9 +27,9 @@ object XyzHttpService {
     import xyzServiceFactory._
 
     implicit val qc = XyzQuerySemigroup
-    private val shipmentQueue = newQueueFor("shipments")
-    private val trackQueue = newQueueFor("track")
-    private val pricingQueue = newQueueFor("pricing")
+    private val shipmentQueue = newQueueForEnd("shipments")
+    private val trackQueue = newQueueForEnd("track")
+    private val pricingQueue = newQueueForEnd("pricing")
 
 
     override def getShipments(query: Option[String]): Future[HttpResponse] =

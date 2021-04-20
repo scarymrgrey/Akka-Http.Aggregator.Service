@@ -13,7 +13,7 @@ object XyzQuerySemigroup extends Semigroup[XyzQueryParam] {
   override def combine(x: XyzQueryParam, y: XyzQueryParam): XyzQueryParam = {
 
     val (key, _) = splitIntoKV(x)
-    val vector = List(x, y)
+    val vct = List(x, y)
       .map(splitIntoKV)
       .map(_._2)
       .mkString(",")
@@ -21,6 +21,6 @@ object XyzQuerySemigroup extends Semigroup[XyzQueryParam] {
       .distinct // in order to drop duplicates in parameters for q1&q2
       .mkString(",")
 
-     XyzQueryParam(s"${key}q=$vector")
+     XyzQueryParam(s"${key}q=$vct")
   }
 }

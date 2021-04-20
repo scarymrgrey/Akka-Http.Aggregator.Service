@@ -3,6 +3,7 @@ package com.fedex
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.typed.ActorSystem
 import akka.http.scaladsl.model.{ContentTypes, HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import com.fedex.constants.ResponseConstants
 import com.fedex.routes.AggregationsRoute
@@ -42,12 +43,12 @@ class AggregationRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures 
 
   }
 
-  lazy val routes = new AggregationsRoute(userRegistry).routes
+  lazy val route: Route = new AggregationsRoute(userRegistry).routes
 
   "AggregationsRoute" should {
     "return nulls if no inputs (GET /aggregation)" in {
       val request = HttpRequest(uri = "/aggregation")
-      request ~> routes ~> check {
+      request ~> route ~> check {
         status should ===(StatusCodes.OK)
         contentType should ===(ContentTypes.`application/json`)
         entityAs[String] should ===(ResponseConstants.emptyBody)
@@ -56,7 +57,7 @@ class AggregationRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures 
 
     "return shipments and nulls (GET /aggregation?shipments=109347263,123456891)" in {
       val request = HttpRequest(uri = "/aggregation?shipments=109347263,123456891")
-      request ~> routes ~> check {
+      request ~> route ~> check {
         status should ===(StatusCodes.OK)
         contentType should ===(ContentTypes.`application/json`)
         entityAs[String] should ===(ResponseConstants.hasShipments)
@@ -65,7 +66,7 @@ class AggregationRoutesSpec extends AnyWordSpec with Matchers with ScalaFutures 
 
     "return 500 with message when failed (GET /aggregation?pricing=return_exception)" in {
       val request = HttpRequest(uri = "/aggregation?pricing=return_exception")
-      request ~> routes ~> check {
+      request ~> route ~> check {
         status should ===(StatusCodes.InternalServerError)
         entityAs[String] should ===("Administrator notified")
       }

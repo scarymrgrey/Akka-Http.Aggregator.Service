@@ -16,12 +16,12 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 trait XyzHttpServiceBusFactory {
-  def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]): XyzServiceBus[Future, HttpRequest, HttpResponse]
+  def newQueueForEnd(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]): XyzServiceBus[Future, HttpRequest, HttpResponse]
 }
 
 object XyzHttpServiceBusFactory {
   def dsl(implicit system: ActorSystem[_]): XyzHttpServiceBusFactory = new XyzHttpServiceBusFactory with WithSettings{
-    override def newQueueFor(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]):
+    override def newQueueForEnd(endpoint: String)(implicit queryCombiner: Semigroup[XyzQueryParam]):
 
     XyzServiceBus[Future, HttpRequest, HttpResponse] = new XyzServiceBus[Future, HttpRequest, HttpResponse] with RequestCombiner {
 
